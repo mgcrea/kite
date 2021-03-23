@@ -10,7 +10,7 @@
   "type": "module",
   "exports": {
     ".": "./lib/index.js",
-    "./client": "./lib/ky.js"
+    "./client": "./lib/client.js"
   },
   "scripts": {
     "build": "tsc --build",
