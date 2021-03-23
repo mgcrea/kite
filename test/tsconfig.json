@@ -1,7 +1,14 @@
 {
-  "extends": "@tsconfig/node10/tsconfig.json",
+  "root": true,
   "compilerOptions": {
-    "lib": ["DOM"],
+    "moduleResolution": "node",
+    "lib": ["DOM", "DOM.Iterable"],
+    "composite": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "strict": true,
     "baseUrl": "./",
     "paths": {
       "src/*": ["./../src/*"],
