@@ -3,13 +3,14 @@
   "root": true,
   "compilerOptions": {
     "composite": true,
-    "lib": ["DOM"],
+    "lib": ["DOM", "DOM.Iterable"],
+    "target": "ES2019",
     "esModuleInterop": true,
     "declaration": true,
     "outDir": "./lib",
     "rootDir": "./src",
     "baseUrl": "./",
-    "module": "ESNext"
+    "module": "ES2020"
   },
   "include": ["src/**/*"]
 }

@@ -19,12 +19,12 @@ export const mergeHeaders = (headersInit: KiteHeadersInit = {}, source: KiteHead
     return headers;
   }
   const sourceHeaders = source instanceof Headers ? source : new Headers(source as HeadersInit);
-  sourceHeaders.forEach((value, key) => {
+  for (const [key, value] of sourceHeaders.entries()) {
     if (value === 'undefined') {
       headers.delete(key);
     } else {
       headers.set(key, value);
     }
-  });
+  }
   return headers;
 };
