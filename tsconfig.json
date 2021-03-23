@@ -1,0 +1,15 @@
+{
+  "extends": "@tsconfig/node10/tsconfig.json",
+  "root": true,
+  "compilerOptions": {
+    "composite": true,
+    "lib": ["DOM"],
+    "esModuleInterop": true,
+    "declaration": true,
+    "outDir": "./lib",
+    "rootDir": "./src",
+    "baseUrl": "./",
+    "module": "ESNext"
+  },
+  "include": ["src/**/*"]
+}
