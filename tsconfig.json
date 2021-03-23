@@ -1,16 +1,18 @@
 {
-  "extends": "@tsconfig/node10/tsconfig.json",
   "root": true,
   "compilerOptions": {
-    "composite": true,
-    "lib": ["DOM", "DOM.Iterable"],
     "target": "ES2019",
-    "esModuleInterop": true,
+    "module": "ES2020",
+    "lib": ["DOM", "DOM.Iterable"],
+    "composite": true,
     "declaration": true,
-    "outDir": "./lib",
-    "rootDir": "./src",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "strict": true,
     "baseUrl": "./",
-    "module": "ES2020"
+    "outDir": "./lib",
+    "rootDir": "./src"
   },
   "include": ["src/**/*"]
 }

@@ -21,7 +21,6 @@
     "lint": "eslint src/"
   },
   "devDependencies": {
-    "@tsconfig/node10": "^1.0.7",
     "@types/jest": "^26.0.21",
     "@typescript-eslint/eslint-plugin": "^4.19.0",
     "@typescript-eslint/parser": "^4.19.0",
