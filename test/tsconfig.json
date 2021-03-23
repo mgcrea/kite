@@ -1,5 +1,4 @@
 {
-  "root": true,
   "compilerOptions": {
     "moduleResolution": "node",
     "lib": ["DOM", "DOM.Iterable"],
