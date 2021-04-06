@@ -4,12 +4,12 @@ import { mergeOptions } from '../utils/merge.js';
 
 export type BeforeRequestHook = (
   request: Request,
-  options: KiteOptions
+  options: RequestInit
 ) => Request | Response | void | Promise<Request | Response | void>;
 
 export type AfterResponseHook = (
   request: Request,
-  options: KiteOptions,
+  options: RequestInit,
   response: Response
 ) => Response | void | Promise<Response | void>;
 
@@ -32,6 +32,10 @@ export type KiteRequestInit = Omit<RequestInit, 'headers'> & {
 };
 
 export type KiteOptions = Omit<KiteRequestInit, 'hooks'> & { hooks: KiteHooks; headers: Headers };
+
+export type KiteNormalizedOptions = Omit<RequestInit, 'headers'> & {
+  headers: Headers;
+};
 
 export class KiteClient {
   private constructor(public options: KiteOptions) {}

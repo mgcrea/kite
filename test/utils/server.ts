@@ -4,6 +4,8 @@ import fastifyCors from 'fastify-cors';
 import { AddressInfo } from 'net';
 import path from 'path';
 
+let server: TestServer;
+
 export type TestServer = FastifyInstance & {
   port: number;
   url: string;
@@ -20,6 +22,9 @@ export const createTestServer = async (_options = {}): Promise<TestServer> => {
   });
   fastify.all<{ Headers: any }>('/echo/headers', async (request, _reply) => {
     return request.headers;
+  });
+  fastify.all<{ Body: any }>('/echo/body', async (request, _reply) => {
+    return request.body;
   });
   fastify.all<{ Querystring: any; Body: any; Headers: any; QueryParams: any }>('/echo', async (request, _reply) => {
     return {
@@ -44,3 +49,12 @@ export const createTestServer = async (_options = {}): Promise<TestServer> => {
     hostname: 'localhost',
   }) as TestServer;
 };
+
+beforeAll(async () => {
+  server = await createTestServer();
+});
+afterAll(async () => {
+  await server.close();
+});
+
+export { server };

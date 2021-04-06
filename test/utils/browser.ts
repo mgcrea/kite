@@ -1,13 +1,13 @@
 import 'expect-playwright';
-import { ChromiumBrowser, Page, chromium } from 'playwright-chromium';
-import { KiteClient, KiteRequest, KitePromise } from 'src/index.js';
-import { TestServer, createTestServer } from './server';
+import { chromium, ChromiumBrowser, Page } from 'playwright-chromium';
+import { KiteClient, KitePromise, KiteRequest } from 'src/index.js';
+import { server } from './server';
+import { delay } from './time';
 
 const PWDEBUG = Boolean(process.env.PWDEBUG);
 
 let browser: ChromiumBrowser;
 let page: Page;
-let server: TestServer;
 
 declare global {
   interface Window {
@@ -15,6 +15,7 @@ declare global {
     KiteClient: typeof KiteClient;
     KiteRequest: typeof KiteRequest;
     KitePromise: typeof KitePromise;
+    delay: typeof delay;
   }
 }
 const ESM_SCRIPT_TAG = {
@@ -26,6 +27,7 @@ const ESM_SCRIPT_TAG = {
 		globalThis.KiteClient = KiteClient;
 		globalThis.KiteRequest = KiteRequest;
 		globalThis.KitePromise = KitePromise;
+		globalThis.delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 	`,
 };
 
@@ -37,11 +39,9 @@ beforeAll(async () => {
     //   log: (name, severity, message, args) => console.log(`[${severity}] ${name} ${message}`),
     // },
   });
-  server = await createTestServer();
 });
 afterAll(async () => {
   await browser.close();
-  await server.close();
 });
 beforeEach(async () => {
   page = await browser.newPage();
@@ -54,4 +54,4 @@ afterEach(async () => {
   await page.close();
 });
 
-export { browser, page, server };
+export { browser, page };

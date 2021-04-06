@@ -8,37 +8,40 @@ export class KitePromise implements PromiseLike<Response> {
   static create(request: KiteRequest): KitePromise {
     return new KitePromise(request);
   }
-  then<TResult1 = Response, TResult2 = never>(
+  private resolve(): Promise<Response> {
+    return this.request.fetch();
+  }
+  public then<TResult1 = Response, TResult2 = never>(
     onfulfilled?: ((value: Response) => TResult1 | PromiseLike<TResult1>) | undefined | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | undefined | null
   ): PromiseLike<TResult1 | TResult2> {
-    return this.request.fetch().then(onfulfilled, onrejected);
+    return this.resolve().then(onfulfilled, onrejected);
   }
-  async arrayBuffer(): Promise<ArrayBuffer> {
-    return (await this.request.fetch()).arrayBuffer();
+  public async arrayBuffer(): Promise<ArrayBuffer> {
+    return (await this.resolve()).arrayBuffer();
   }
-  async blob(): Promise<Blob> {
-    return (await this.request.fetch()).blob();
+  public async blob(): Promise<Blob> {
+    return (await this.resolve()).blob();
   }
-  async formData(): Promise<FormData> {
+  public async formData(): Promise<FormData> {
     const { headers } = this.request;
     if (!headers.has('accept')) {
       headers.set('accept', 'multipart/form-data');
     }
-    return (await this.request.fetch()).formData();
+    return (await this.resolve()).formData();
   }
-  async json(): Promise<JSONValue> {
+  public async json(): Promise<JSONValue> {
     const { headers } = this.request;
     if (!headers.has('accept')) {
       headers.set('accept', 'application/json');
     }
-    return (await this.request.fetch()).json();
+    return (await this.resolve()).json();
   }
-  async text(): Promise<string> {
+  public async text(): Promise<string> {
     const { headers } = this.request;
     if (!headers.has('accept')) {
       headers.set('accept', 'text/*');
     }
-    return (await this.request.fetch()).text();
+    return (await this.resolve()).text();
   }
 }
