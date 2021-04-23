@@ -1,33 +1,32 @@
-import type { KiteHooks, KiteOptions } from './KiteClient.js';
+import { SUPPORTS_ABORT_CONTROLLER } from '../utils/support';
+
+export type URLSearchParamsInit = ConstructorParameters<typeof URLSearchParams>[0];
+
+export type KiteRequestInit = RequestInit & {
+  json?: Readonly<unknown>;
+  prefixUrl?: string | URL;
+  searchParams?: URLSearchParamsInit;
+};
 
 export class KiteRequest {
   public readonly headers: Headers;
-  private readonly hooks: KiteHooks;
-  private init: RequestInit;
-  constructor(private input: string, private readonly options: KiteOptions) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { headers, hooks, ...otherInit } = options;
-    this.headers = new Headers(headers);
-    this.hooks = hooks;
-    this.init = this.buildInit(otherInit);
-  }
-  public async fetch(): Promise<Response> {
-    const { beforeRequest } = this.hooks;
-    let request = this.build();
-    for (const hook of beforeRequest) {
-      const result = await hook(request, this.init);
-      if (result instanceof Request) {
-        request = result;
-        break;
-      }
-      if (result instanceof Response) {
-        return result;
+  public readonly abortController?: AbortController;
+  constructor(public readonly input: string, public readonly init: Readonly<KiteRequestInit>) {
+    this.headers = new Headers(init.headers);
+    // Add timeout support via AbortController API
+    if (SUPPORTS_ABORT_CONTROLLER) {
+      this.abortController = new globalThis.AbortController();
+      if (init.signal) {
+        // Forward abort event
+        init.signal.addEventListener('abort', () => {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          this.abortController!.abort();
+        });
       }
     }
-    return (this.options.fetch ?? window.fetch)(request);
   }
-  private build(): Request {
-    return new Request(this.buildInput(), this.init);
+  public toRequest(): Request {
+    return new Request(this.buildInput(), this.buildInit());
   }
   private buildInput(): string {
     const { input } = this;
@@ -41,25 +40,26 @@ export class KiteRequest {
     }
     return parts.join('');
   }
-  private buildInit(otherInit: Partial<RequestInit>): RequestInit {
+  private buildInit(): RequestInit {
     const { headers } = this;
     const method = this.normalizeMethod();
     const body = this.normalizeBody();
-    return { ...otherInit, headers, method, body };
+    const signal = this.abortController?.signal;
+    return { ...this.init, headers, method, body, signal };
   }
   private normalizePrefixUrl(): string {
-    const { options, input } = this;
-    if (!options.prefixUrl) {
+    const { input, init } = this;
+    if (!init.prefixUrl) {
       return '';
     }
-    const prefixUrl = options.prefixUrl.toString();
+    const prefixUrl = init.prefixUrl.toString();
     if (!prefixUrl.endsWith('/') && !input.startsWith('/')) {
       return `${prefixUrl}/`;
     }
     return prefixUrl;
   }
   private normalizeSearchParams(): string {
-    const { searchParams } = this.options;
+    const { searchParams } = this.init;
     if (!searchParams) {
       return '';
     }
@@ -69,15 +69,13 @@ export class KiteRequest {
     return new URLSearchParams(searchParams).toString();
   }
   private normalizeMethod(): RequestInit['method'] {
-    const { options } = this;
-    const method = options.method ? options.method.toUpperCase() : 'GET';
-    return method;
+    const { method } = this.init;
+    return method ? method.toUpperCase() : 'GET';
   }
   private normalizeBody(): RequestInit['body'] {
-    const { options, headers } = this;
-    const { json, body } = options;
+    const { json, body } = this.init;
     if (json) {
-      headers.set('content-type', 'application/json');
+      this.headers.set('content-type', 'application/json');
     }
     return json ? JSON.stringify(json) : body;
   }

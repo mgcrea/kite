@@ -1,4 +1,4 @@
-import { KiteRequestInit, KiteOptions, KiteHooks, KiteHeadersInit } from 'src/core/KiteClient.js';
+import { KiteOptions, KiteNormalizedOptions, KiteHooks, KiteHeadersInit } from 'src/core/KiteClient.js';
 
 export const mergeArray = <T>(array?: T[], source?: T[]): T[] => (array ? array.slice() : []).concat(source ?? []);
 
@@ -25,7 +25,7 @@ export const mergeHeaders = (headersInit: KiteHeadersInit = {}, source: KiteHead
   return headers;
 };
 
-export const mergeOptions = (options: KiteRequestInit, source: KiteRequestInit = {}): KiteOptions => {
+export const mergeOptions = (options: KiteOptions, source: KiteOptions = {}): KiteNormalizedOptions => {
   const hooks = mergeHooks(options.hooks, source.hooks);
   const headers = mergeHeaders(options.headers, source.headers);
   return { ...options, ...source, hooks, headers };

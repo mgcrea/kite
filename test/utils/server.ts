@@ -3,6 +3,7 @@ import fastifyStatic from 'fastify-static';
 import fastifyCors from 'fastify-cors';
 import { AddressInfo } from 'net';
 import path from 'path';
+import { delay } from './time';
 
 let server: TestServer;
 
@@ -17,16 +18,25 @@ export const createTestServer = async (_options = {}): Promise<TestServer> => {
   fastify.register(fastifyCors, {
     // put your options here
   });
+  fastify.addHook('onRequest', async (request) => {
+    console.log(`${request.method} ${request.url}`);
+  });
   fastify.get('/', (_request, reply) => {
     reply.type('text/html').send('<html><body><h1>Hello World</h1></body></html>');
   });
   fastify.all<{ Headers: any }>('/echo/headers', async (request, _reply) => {
     return request.headers;
   });
-  fastify.all<{ Body: any }>('/echo/body', async (request, _reply) => {
+  fastify.all<{ Querystring: { delay?: string }; Body: any }>('/echo/body', async (request, _reply) => {
+    if (request.query.delay) {
+      await delay(parseInt(request.query.delay, 10));
+    }
     return request.body;
   });
-  fastify.all<{ Querystring: any; Body: any; Headers: any; QueryParams: any }>('/echo', async (request, _reply) => {
+  fastify.all<{ Querystring: { delay?: string }; Body: any; Headers: any }>('/echo', async (request, _reply) => {
+    if (request.query.delay) {
+      await delay(parseInt(request.query.delay, 10));
+    }
     return {
       body: request.body,
       headers: request.headers,
