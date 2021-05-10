@@ -1,3 +1,4 @@
+import { MAX_SAFE_TIMEOUT } from 'src/utils/support.js';
 import { HTTPError } from '../errors/HTTPError.js';
 import { TimeoutError } from '../errors/TimeoutError.js';
 import type { JSONValue, KiteNormalizedOptions } from './KiteClient.js';
@@ -16,12 +17,12 @@ export class KitePromise implements PromiseLike<Response> {
   static create(request: KiteRequest, options: KitePromiseOptions): KitePromise {
     return new KitePromise(request, options);
   }
-  private async fetch(input: Request): Promise<Response> {
+  private async fetch(inputRequest: Request): Promise<Response> {
     const { request, options } = this;
-    const { hooks } = options;
-    let resolvedRequest = input;
+    const { hooks, throwHttpErrors, timeout, fetch } = options;
+    let resolvedRequest = inputRequest;
     for (const hook of hooks.beforeRequest) {
-      const result = await hook(input, request.init);
+      const result = await hook(inputRequest, request.init);
       if (result instanceof Request) {
         resolvedRequest = result;
         break;
@@ -30,45 +31,23 @@ export class KitePromise implements PromiseLike<Response> {
         return result;
       }
     }
-    const res = await this.fetchWithTimeout(resolvedRequest);
-    return res;
-  }
-  private async fetchWithTimeout(resolvedRequest: Request): Promise<Response> {
-    const { request, options } = this;
-    const { timeout } = options;
-    const fetch = options.fetch ?? globalThis.fetch;
-    if (!timeout) {
-      return fetch(resolvedRequest);
+    const res = await fetchWithTimeout(resolvedRequest, timeout, { fetch, abortController: request.abortController });
+    if (!res.ok && throwHttpErrors) {
+      throw new HTTPError(res, resolvedRequest, request.init);
     }
-    return new Promise<Response>((resolve, reject) => {
-      const timeoutID = setTimeout(() => {
-        if (request.abortController) {
-          request.abortController.abort();
-        }
-        reject(new TimeoutError(resolvedRequest));
-      }, options.timeout);
-
-      fetch(resolvedRequest)
-        .then(resolve)
-        .catch(reject)
-        .finally(() => {
-          clearTimeout(timeoutID);
-        });
-    });
+    return res;
   }
   private async resolve(): Promise<Response> {
     const { request, options } = this;
-    const { hooks, throwHttpErrors } = options;
+    const { hooks } = options;
     const inputRequest = request.toRequest();
-    let resolvedResponse = this.decorateResponse(await this.fetch(inputRequest));
+    const response = await retryWithDelay(() => this.fetch(inputRequest));
+    let resolvedResponse = this.decorateResponse(response);
     for (const hook of hooks.afterResponse) {
       const result = await hook(inputRequest, request.init, resolvedResponse);
       if (result instanceof Response) {
         resolvedResponse = this.decorateResponse(result);
       }
-    }
-    if (!resolvedResponse.ok && throwHttpErrors) {
-      throw new HTTPError(resolvedResponse, inputRequest, request.init);
     }
     return resolvedResponse;
   }
@@ -115,3 +94,45 @@ export class KitePromise implements PromiseLike<Response> {
     return (await this.#value).text();
   }
 }
+
+type FetchWithTimeoutOptions = {
+  abortController?: AbortController;
+  fetch?: typeof fetch;
+};
+
+const fetchWithTimeout = async (
+  request: Request,
+  timeout = 0,
+  { fetch = globalThis.fetch, abortController }: FetchWithTimeoutOptions
+): Promise<Response> => {
+  if (!timeout) {
+    return fetch(request);
+  }
+  if (timeout > MAX_SAFE_TIMEOUT) {
+    throw new RangeError(`The \`timeout\` option cannot be greater than ${MAX_SAFE_TIMEOUT}`);
+  }
+  return new Promise<Response>((resolve, reject) => {
+    const timeoutID = setTimeout(() => {
+      if (abortController) {
+        abortController.abort();
+      }
+      reject(new TimeoutError(request));
+    }, timeout);
+
+    fetch(request)
+      .then(resolve)
+      .catch(reject)
+      .finally(() => {
+        clearTimeout(timeoutID);
+      });
+  });
+};
+
+const retryWithDelay = async <T extends () => Promise<Response>>(operation: T): Promise<Response> => {
+  try {
+    return await operation();
+  } catch (error) {
+    console.dir({ error });
+    return new Response();
+  }
+};

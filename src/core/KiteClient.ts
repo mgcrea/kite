@@ -2,6 +2,7 @@ import { KiteRequest, KiteRequestInit } from './KiteRequest.js';
 import { KitePromiseOptions } from './KitePromise.js';
 import { KitePromise } from './KitePromise.js';
 import { mergeOptions } from '../utils/merge.js';
+import { KITE_DEFAULT_RETRY_OPTIONS, RetryOptions } from '../utils/retry.js';
 
 // https://developer.mozilla.org/en-US/docs/Web/API/Body#methods
 export type JSONValue = Record<string, unknown>;
@@ -31,14 +32,23 @@ export type KiteOptions = Omit<KiteRequestInit, 'headers'> & {
   parseJson?: (text: string) => JSONValue;
   throwHttpErrors?: boolean;
   timeout?: number;
+  retry?: RetryOptions | number;
 };
 
-export type KiteNormalizedOptions = Omit<KiteOptions, 'hooks' | 'headers'> & { hooks: KiteHooks; headers: Headers };
+export type KiteNormalizedOptions = Omit<KiteOptions, 'hooks' | 'headers' | 'retry'> & {
+  hooks: KiteHooks;
+  headers: Headers;
+  retry: Required<RetryOptions>;
+};
+export const KITE_DEFAULT_OPTIONS: Partial<KiteNormalizedOptions> = {
+  throwHttpErrors: true,
+  retry: KITE_DEFAULT_RETRY_OPTIONS,
+};
 
 export class KiteClient {
   private constructor(public readonly options: KiteNormalizedOptions) {}
   public static create(options?: KiteOptions): KiteClient {
-    return new KiteClient(mergeOptions({}, options));
+    return new KiteClient(mergeOptions({ ...KITE_DEFAULT_OPTIONS }, options));
   }
   public create(options?: KiteOptions): KiteClient {
     return KiteClient.create(options);
